@@ -1,0 +1,48 @@
+{
+  "name": "express-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon source/server.ts",
+    "build": "rm -rf build/ && prettier --write source/ && tsc",
+    "swagger-autogen": "node swagger.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zagaris/express-api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zagaris/express-api/issues"
+  },
+  "homepage": "https://github.com/zagaris/express-api#readme",
+  "dependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/express": "^4.17.21",
+    "@types/morgan": "^1.9.9",
+    "axios": "^1.6.2",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.18.2",
+    "helmet": "^4.6.0",
+    "joi": "^17.4.1",
+    "monk": "^7.3.3",
+    "morgan": "^1.10.0",
+    "ts-node": "^10.9.1",
+    "youtube-dl-exec": "^2.4.17"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/swagger-ui-express": "^4.1.6",
+    "eslint": "^8.54.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.29.0",
+    "nodemon": "^2.0.22",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.0",
+    "typescript": "^5.3.2"
+  }
+}
