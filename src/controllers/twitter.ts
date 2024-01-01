@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import youtubedl from 'youtube-dl-exec'
 import { extractDomain } from '../utils/helper-url';
-import { Format, VideoInfo } from '../models';
-import { getYoutubeResult, sortYoutubeResult } from '../utils';
+import { Format } from '../models';
+import { getVideoSlice, sortQuality } from '../utils';
+import { TiktokInfo } from '../models/tiktok';
 
 const getFormatVideo = (data: any[]): Format[] => {
     const formats = data.map(function(fm: any) {
@@ -12,7 +13,8 @@ const getFormatVideo = (data: any[]): Format[] => {
             video: false,
             type: 'audio',
             name: '',
-            quality: Number(fm.format_note.replace(/\D/g, ''))
+            quality: fm.tbr,
+            zest: fm
         };
         if (fm.resolution == 'audio only' || fm.resolution == '176x144' || fm.asr != null) {
             format.audio = true;
@@ -33,37 +35,53 @@ const getFormatVideo = (data: any[]): Format[] => {
 
         return format;
     });
-    formats.sort(sortYoutubeResult);
-    return formats.reduce(getYoutubeResult, []);
+    
+    formats.sort(sortQuality);
+    return getVideoSlice(formats, 2);
 }
 
-export const getMetaYoutue = async (req: Request, res: Response, next: NextFunction) => {
+export const getMetaTwitter = async (req: Request, res: Response, next: NextFunction) => {
     const domain = extractDomain(req.body.postUrl);
+    console.log(domain)
     youtubedl(req.body.postUrl?.toString () ?? '', {
         dumpSingleJson: true,
         noCheckCertificates: true,
         noWarnings: true,
         ignoreErrors: true,
         preferFreeFormats: true,
+        flatPlaylist: true,
+        quiet: true,
         skipDownload: true,
         geoBypass: true,
-        addHeader: [`referer:${domain}`, 'user-agent:googlebot']
+        addHeader: [`referer:${domain}`, 'user-agent:googlebot'],
+        // Add additional options to speed up the download
+        socketTimeout: 5000, // Set socket timeout to 5 seconds
+        retries: 3, // Retry up to 3 times if the download fails
+        callHome: true, // Disable contacting the youtube-dl server
+        noPart: true, // Disable downloading video in parts
+        noCacheDir: true, // Disable caching downloaded files
+        noPlaylist: true, // Disable downloading playlists
+        noMtime: true, 
     }).then((result: any) => {
+        // res.send(result)
+        // return result;
         const resultFilter = result.formats.filter((x: any) => 
-            x.format_note &&
             x.format_note !== 'storyboard' &&
-            x.format_note !== 'Default'
+            x.format_note !== 'Default' &&
+            x.url.split('.').pop().split('?')[0] == 'mp4'
         );
+        
         const formats = getFormatVideo(resultFilter);
-        const output: VideoInfo = {
+        const output: TiktokInfo = {
             thumb: result.thumbnail,
-            channel: result.channel,
+            channel: result.creator,
             meta: {
                 duration: result.duration_string,
                 source: result.original_url,
                 title: result.fulltitle,
                 tags: result.tags,
-                desc: result.description
+                desc: result.description,
+                uploader: result.uploader
             },
             view_count: result.view_count,
             formats
@@ -74,4 +92,4 @@ export const getMetaYoutue = async (req: Request, res: Response, next: NextFunct
     .catch(ex => res.send(500))
 };
 
-export default { getMetaYoutue };
+export default { getMetaTwitter };

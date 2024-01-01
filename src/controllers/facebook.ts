@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import youtubedl from 'youtube-dl-exec'
 import { extractDomain } from '../utils/helper-url';
 import { Format } from '../models';
-import { getVideoSlice, sortQuality } from '../utils';
-import { TiktokInfo } from '../models/tiktok';
+import { getYoutubeResult, sortYoutubeResult } from '../utils';
+import { VideoInfo } from '../models';
 
 const getFormatVideo = (data: any[]): Format[] => {
     const formats = data.map(function(fm: any) {
@@ -13,13 +13,12 @@ const getFormatVideo = (data: any[]): Format[] => {
             video: false,
             type: 'audio',
             name: '',
-            quality: fm.tbr,
-            zest: fm
+            quality: fm.quality
         };
-        if (fm.resolution == 'audio only' || fm.resolution == '176x144' || fm.asr != null) {
+        if (fm.resolution == 'audio only' || fm.resolution == '176x144' || fm.quality) {
             format.audio = true;
         }
-        if (fm.resolution !== 'audio only' && fm.resolution !== '176x144') {
+        if (fm.resolution !== 'audio only') {
             format.video = true;
         }
 
@@ -35,36 +34,36 @@ const getFormatVideo = (data: any[]): Format[] => {
 
         return format;
     });
-    
-    formats.sort(sortQuality);
-    return getVideoSlice(formats, 2);
+    // return formats;
+    formats.sort(sortYoutubeResult);
+    return formats.reduce(getYoutubeResult, []);
 }
 
-export const getMetaTwitter = async (req: Request, res: Response, next: NextFunction) => {
+export const getMetaFacebook = async (req: Request, res: Response, next: NextFunction) => {
     const domain = extractDomain(req.body.postUrl);
-    console.log(domain)
     youtubedl(req.body.postUrl?.toString () ?? '', {
         dumpSingleJson: true,
         noCheckCertificates: true,
         noWarnings: true,
         ignoreErrors: true,
         preferFreeFormats: true,
-        flatPlaylist: true,
-        quiet: true,
         skipDownload: true,
         geoBypass: true,
-        addHeader: [`referer:${domain}`, 'user-agent:googlebot']
+        addHeader: [`referer:${domain}`, 'user-agent:googlebot'],
+    
+        // Add additional options to speed up the download
+        // socketTimeout: 5000, // Set socket timeout to 5 seconds
+        // retries: 3, // Retry up to 3 times if the download fails
+        // callHome: true, // Disable contacting the youtube-dl server
+        // noPart: true, // Disable downloading video in parts
+        // noCacheDir: true, // Disable caching downloaded files
+        // noPlaylist: true, // Disable downloading playlists
+        // noMtime: true, 
     }).then((result: any) => {
-        // res.send(result)
-        // return result;
-        const resultFilter = result.formats.filter((x: any) => 
-            x.format_note !== 'storyboard' &&
-            x.format_note !== 'Default' &&
-            x.url.split('.').pop().split('?')[0] == 'mp4'
-        );
-        
-        const formats = getFormatVideo(resultFilter);
-        const output: TiktokInfo = {
+        // res.send(result);
+        // return;
+        const formats = getFormatVideo(result.formats);
+        const output: VideoInfo = {
             thumb: result.thumbnail,
             channel: result.creator,
             meta: {
@@ -72,8 +71,7 @@ export const getMetaTwitter = async (req: Request, res: Response, next: NextFunc
                 source: result.original_url,
                 title: result.fulltitle,
                 tags: result.tags,
-                desc: result.description,
-                uploader: result.uploader
+                desc: result.description
             },
             view_count: result.view_count,
             formats
@@ -81,7 +79,10 @@ export const getMetaTwitter = async (req: Request, res: Response, next: NextFunc
         
         res.send(output)
     })
-    .catch(ex => res.send(500))
+    .catch(ex => {
+        console.log(ex)
+        res.send(500)
+    })
 };
 
-export default { getMetaTwitter };
+export default { getMetaFacebook };

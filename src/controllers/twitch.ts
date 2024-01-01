@@ -37,7 +37,16 @@ export const getMetaTwitch = async (req: Request, res: Response, next: NextFunct
         quiet: true,
         skipDownload: true,
         geoBypass: true,
-        addHeader: [`referer:${domain}`, 'user-agent:googlebot']
+        addHeader: [`referer:${domain}`, 'user-agent:googlebot'],
+
+        // Add additional options to speed up the download
+        socketTimeout: 5000, // Set socket timeout to 5 seconds
+        retries: 3, // Retry up to 3 times if the download fails
+        callHome: true, // Disable contacting the youtube-dl server
+        noPart: true, // Disable downloading video in parts
+        noCacheDir: true, // Disable caching downloaded files
+        noPlaylist: true, // Disable downloading playlists
+        noMtime: true, 
     }).then((result: any) => {
         // res.send(result)
         // return result;

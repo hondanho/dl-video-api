@@ -2,8 +2,7 @@ const swaggerAutogen = require('swagger-autogen')()
 
 const outputFile = './swagger_output.json'
 const endpointsFiles = [
-    './source/routes/posts.ts',
-    './source/routes/youtube.ts'
+    './src/routes'
 ]
 
 swaggerAutogen(outputFile, endpointsFiles )
