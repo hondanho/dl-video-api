@@ -47,7 +47,7 @@ export const getMetaTiktok = async (req: Request, res: Response, next: NextFunct
         noPlaylist: true, // Disable downloading playlists
         noMtime: true, 
     }).then((result: any) => {
-        res.send(result)
+        // res.send(result)
         // return result;
         const resultFilter = result.formats.filter((x: any) => 
             x.format_note !== 'storyboard' &&
