@@ -7,7 +7,7 @@ pipeline  {
             steps {
                 sh """
                     docker-compose down
-                    docker-composes up -d
+                    docker-compose up -d
                 """
             }
         }
