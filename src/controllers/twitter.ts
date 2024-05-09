@@ -1,56 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
-import youtubedl from 'youtube-dl-exec'
+import youtubedl, { Format } from 'youtube-dl-exec'
 import { extractDomain } from '../utils/helper-url';
-import { Format } from '../models';
-import { getVideoSlice, sortQuality } from '../utils';
-import { TiktokInfo } from '../models/tiktok';
+import { FormatInfo, VideoInfo } from '../models';
+import { sortByFormat } from '../utils';
 
-const getFormatVideo = (data: any[]): Format[] => {
-    const formats = data.map(function(fm: any) {
-        const format: Format = {
-            url: fm.url,
-            audio: false,
-            video: false,
-            type: 'audio',
-            name: '',
-            quality: fm.tbr,
-            zest: fm
+const getFormatVideo = (data: any[], title: string): FormatInfo[] => {
+    const formats = data.map(function(fm: Format) {
+        const formatConvert: FormatInfo = {
+            name: fm.resolution + '.' + fm.ext,
+            url: fm.url ,
+            audio: fm.audio_ext !== 'none' && fm.video_ext == 'none',
+            no_audio: fm.acodec == 'none',
+            quality: fm.height ?? 0,
+            ext: fm.ext
         };
-        if (fm.resolution == 'audio only' || fm.resolution == '176x144' || fm.asr != null) {
-            format.audio = true;
-        }
-        if (fm.resolution !== 'audio only' && fm.resolution !== '176x144') {
-            format.video = true;
-        }
-
-        if (format.audio && format.video) {
-            format.type = 'video_yes_audio';
-        }
-        else if (format.audio && !format.video) {
-            format.type = 'audio';
-        }
-        else if (!format.audio && format.video) {
-            format.type = 'video_no_audio';
-        }
-
-        return format;
+        return formatConvert;
     });
-    
-    formats.sort(sortQuality);
-    return getVideoSlice(formats, 2);
+
+    return sortByFormat(formats);
 }
 
 export const getMetaTwitter = async (req: Request, res: Response, next: NextFunction) => {
     const domain = extractDomain(req.body.postUrl);
-    console.log(domain)
     youtubedl(req.body.postUrl?.toString () ?? '', {
+        allFormats: true,
         dumpSingleJson: true,
         noCheckCertificates: true,
         noWarnings: true,
         ignoreErrors: true,
         preferFreeFormats: true,
-        flatPlaylist: true,
-        quiet: true,
         skipDownload: true,
         geoBypass: true,
         addHeader: [`referer:${domain}`, 'user-agent:googlebot'],
@@ -63,33 +41,30 @@ export const getMetaTwitter = async (req: Request, res: Response, next: NextFunc
         noPlaylist: true, // Disable downloading playlists
         noMtime: true, 
     }).then((result: any) => {
-        // res.send(result)
-        // return result;
         const resultFilter = result.formats.filter((x: any) => 
-            x.format_note !== 'storyboard' &&
-            x.format_note !== 'Default' &&
-            x.url.split('.').pop().split('?')[0] == 'mp4'
+            x.protocol == 'https'
         );
-        
-        const formats = getFormatVideo(resultFilter);
-        const output: TiktokInfo = {
+        const formats = getFormatVideo(resultFilter, result.fulltitle);
+        const output: VideoInfo = {
             thumb: result.thumbnail,
-            channel: result.creator,
+            channel: result.channel,
             meta: {
                 duration: result.duration_string,
                 source: result.original_url,
                 title: result.fulltitle,
                 tags: result.tags,
-                desc: result.description,
-                uploader: result.uploader
+                categories: result.categories,
+                desc: result.description
             },
             view_count: result.view_count,
             formats
         };
-        
         res.send(output)
     })
-    .catch(ex => res.send(500))
+    .catch(ex => {
+        console.log(ex);
+        res.send(500)
+    })
 };
 
 export default { getMetaTwitter };

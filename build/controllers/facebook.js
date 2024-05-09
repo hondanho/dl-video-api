@@ -45,7 +45,7 @@ const getFormatVideo = (data) => {
     });
     // return formats;
     formats.sort(utils_1.sortYoutubeResult);
-    return formats.reduce(utils_1.getYoutubeResult, []);
+    return formats.reduce(utils_1.sortByFormat, []);
 };
 const getMetaFacebook = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;

@@ -1,45 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
-import youtubedl from 'youtube-dl-exec'
+import youtubedl, { Format } from 'youtube-dl-exec'
 import { extractDomain } from '../utils/helper-url';
-import { Format, VideoInfo } from '../models';
-import { getYoutubeResult, sortYoutubeResult } from '../utils';
+import { FormatInfo, VideoInfo } from '../models';
+import { sortByFormat } from '../utils';
 
-const getFormatVideo = (data: any[]): Format[] => {
-    const formats = data.map(function(fm: any) {
-        const format: Format = {
-            url: fm.url + '&title=downloadvideoonline',
-            audio: false,
-            video: false,
-            type: 'audio',
-            name: '',
-            quality: Number(fm.format_note.replace(/\D/g, ''))
+const getFormatVideo = (data: any[], title: string): FormatInfo[] => {
+    const formats = data.map(function(fm: Format) {
+        const formatConvert: FormatInfo = {
+            name: fm.format_note ? fm.format_note + '.' + fm.ext  : '',
+            url: fm.url + '&title=' + encodeURIComponent(title) + '_downloadvideoonline.org',
+            audio: fm.audio_ext !== 'none' && fm.video_ext == 'none',
+            no_audio: fm.acodec == 'none',
+            quality: fm.quality,
+            ext: fm.ext
         };
-        if (fm.resolution == 'audio only' || fm.resolution == '176x144' || fm.asr != null) {
-            format.audio = true;
-        }
-        if (fm.resolution !== 'audio only' && fm.resolution !== '176x144') {
-            format.video = true;
-        }
-
-        if (format.audio && format.video) {
-            format.type = 'video_yes_audio';
-        }
-        else if (format.audio && !format.video) {
-            format.type = 'audio';
-        }
-        else if (!format.audio && format.video) {
-            format.type = 'video_no_audio';
-        }
-
-        return format;
+        return formatConvert;
     });
-    formats.sort(sortYoutubeResult);
-    return formats.reduce(getYoutubeResult, []);
+
+    return sortByFormat(formats);
 }
 
 export const getMetaYoutue = async (req: Request, res: Response, next: NextFunction) => {
     const domain = extractDomain(req.body.postUrl);
     youtubedl(req.body.postUrl?.toString () ?? '', {
+        allFormats: true,
         dumpSingleJson: true,
         noCheckCertificates: true,
         noWarnings: true,
@@ -58,11 +42,17 @@ export const getMetaYoutue = async (req: Request, res: Response, next: NextFunct
         noMtime: true, 
     }).then((result: any) => {
         const resultFilter = result.formats.filter((x: any) => 
-            x.format_note &&
+            x.format_note && 
             x.format_note !== 'storyboard' &&
-            x.format_note !== 'Default'
+            !x.format_note.includes('low') &&
+            !x.format_note.includes('Default') &&
+            !x.format_note.includes('Premium') &&
+            !x.format_note.includes('144p') &&
+            !x.format_note.includes('240p') &&
+            !x.format_note.includes('DRC') &&
+            !x.format_note.includes('default')
         );
-        const formats = getFormatVideo(resultFilter);
+        const formats = getFormatVideo(resultFilter, result.fulltitle);
         const output: VideoInfo = {
             thumb: result.thumbnail,
             channel: result.channel,
@@ -71,6 +61,7 @@ export const getMetaYoutue = async (req: Request, res: Response, next: NextFunct
                 source: result.original_url,
                 title: result.fulltitle,
                 tags: result.tags,
+                categories: result.categories,
                 desc: result.description
             },
             view_count: result.view_count,

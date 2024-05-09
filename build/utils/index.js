@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getYoutubeResult = exports.sortYoutubeResult = exports.getVideoSlice = exports.sortQuality = void 0;
+exports.sortByFormat = exports.sortYoutubeResult = exports.getVideoSlice = exports.sortQuality = void 0;
 const sortQuality = (a, b) => {
     if (a.quality < b.quality) {
         return 1;
@@ -34,7 +34,7 @@ const sortYoutubeResult = (a, b) => {
     return b.quality - a.quality;
 };
 exports.sortYoutubeResult = sortYoutubeResult;
-const getYoutubeResult = (result, item) => {
+const sortByFormat = (result, item) => {
     const found = result.find(element => element.type === item.type);
     if (!found) {
         switch (item.type) {
@@ -54,4 +54,4 @@ const getYoutubeResult = (result, item) => {
     }
     return result;
 };
-exports.getYoutubeResult = getYoutubeResult;
+exports.sortByFormat = sortByFormat;

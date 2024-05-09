@@ -1,3 +1,4 @@
+import { AudioEXTEnum } from "youtube-dl-exec";
 
 export interface VideoInfo {
     thumb: string,
@@ -5,20 +6,21 @@ export interface VideoInfo {
         duration: string,
         source: string,
         tags: string[],
+        categories: string[],
         title: string,
         desc: string
     },
     view_count: number,
-    formats: Format[],
+    formats: FormatInfo[],
     channel: string
 }
 
-export type Format = {
-    url: string
-    audio: boolean,
-    video: boolean,
-    type: 'audio' | 'video_yes_audio' | 'video_no_audio',
+export type FormatInfo = {
     name: string,
-    quality: number,
-    zest?: any
+    url: string,
+    audio: boolean, // check by audio_ext && video_ext
+    no_audio: boolean,
+    quality: number | undefined,
+    ext: AudioEXTEnum,
+    cookies?: string
 }
