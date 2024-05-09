@@ -72,7 +72,7 @@ pipeline  {
             steps{
                 
                 sh 'echo "triggering deploy new version..."'
-                build job: 'deploy', parameters: [string(name: 'SERVICE_NAME', value: env.SERVICE_NAME), string(name: 'VERSION', value: env.BUILD_NUMBER)]
+                build job: 'dl-video-api/deploy', parameters: [string(name: 'SERVICE_NAME', value: env.SERVICE_NAME), string(name: 'VERSION', value: env.BUILD_NUMBER)]
             }
         }
     }
